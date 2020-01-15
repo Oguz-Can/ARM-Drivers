@@ -39,6 +39,25 @@ void I2C_PeriClockControl(I2C_RegDef_t *pI2Cx, uint8_t EnOrDi){
 	}
 }
 
+/***************************************************************************
+ * @fn					- I2C_GetFlagStatus
+ *
+ * @brief				- Fetches I2C_SR1 register flags
+ *
+ * @param[in]			- Register addresses of a given I2C
+ * @param[in]			- Requested flag
+ *
+ * @return				- Flag status
+ *
+ * @Note				- none
+ */
+uint8_t I2C_GetFlagStatus(I2C_RegDef_t *pI2Cx, uint32_t FlagName){
+	if (pI2Cx->SR1 & FlagName) {
+		return FLAG_SET;
+	}
+	return FLAG_RESET;
+}
+
 
 //TO DO: implement PLL clock calculation
 /***************************************************************************
@@ -215,6 +234,48 @@ static void I2C_GenerateStartCondition(I2C_RegDef_t *pI2Cx){
 	pI2Cx->CR1 |= (1 << I2C_CR1_START);
 }
 
+
+/***************************************************************************
+ * @fn					- I2C_AddressPhase
+ *
+ * @brief				- Helper function to initiate address phase of I2C
+ * 						communications
+ *
+ * @param[in]			- Register addresses of a given I2C
+ * @param[in]			- Address of the slave 
+ *
+ * @return				- none
+ *
+ * @Note				- none
+ */
+static void I2C_AddressPhase(I2C_RegDef_t *pI2Cx, uint8_t slaveAddr){
+	slaveAddr = slaveAddr << 1; //This byte contains slave address and r/w bit
+	slaveAddr &= ~(1);			//Set r/w bit to 'write' aka. clear this bit
+	pI2Cx->DR = slaveAddr;
+}
+
+
+/***************************************************************************
+ * @fn					- I2C_ClearADDR
+ *
+ * @brief				- Helper function to clear ADDR flag
+ *
+ * @param[in]			- Register addresses of a given I2C
+ *
+ * @return				- none
+ *
+ * @Note				- ADDR flag is cleared when SR1 is read followed
+ * 						by SR2 is read operations or by hardware when PE
+ * 						flag is 0 (see reference manual: RM0090)
+ */
+static void I2C_ClearADDR(I2C_RegDef_t *pI2Cx){
+	uint32_t foo = pI2Cx->SR1;
+	foo = pI2Cx->SR2;
+	(void) foo; //Cast it to void to avoid compiler warning
+}
+
+
+
 /***************************************************************************
  * @fn					- I2C_MasterSendData
  *
@@ -235,16 +296,20 @@ void I2C_MasterSendData (I2C_Handle_t *pI2CHandle, uint8_t *pTxBuffer, uint32_t 
 
 	//2.Confirm that start generation is completed by checking the SB flag in the SR1
 	//Until SB is cleared SCL will be stretched
-	//while(I2C_GetFlagStatus(pI2CHandle->pI2Cx, I2C_FLAG_SB)){};
+	while(I2C_GetFlagStatus(pI2CHandle->pI2Cx, I2C_FLAG_SB)){};
 
 	//3. Send the address of the slave with r/nw bit set to w(0) (total 8 bits)
+	I2C_AddressPhase(pI2CHandle->pI2Cx, SlaveAddr);
 
 	//4. Confirm that address phase is completed by checking the ADDR flag in the SR1
+	while(I2C_GetFlagStatus(pI2CHandle->pI2Cx, I2C_FLAG_ADDR)){};
 
 	//5. Clear the ADDR flag according to its software sequence
 	//Until ADDR is cleared SCL will be stretched
+	I2C_ClearADDR(pI2CHandle->pI2Cx);
 
 	//6. Send data until Len is 0
+
 
 	//7.When Len becomes 0 wait for TXE = 1 and BTF = 1 before generating stop condition
 	//TXE = 1 and BTF = 1 means SR and DR are empty and next transmission should begin when BTF = 1

@@ -49,6 +49,44 @@ typedef struct{
 #define I2C_FM_DUTY_2		0
 #define I2C_FM_DUTY_16_9	1
 
+
+/**
+ * I2C_SR1 bit position definitions
+ */
+#define I2C_SR1_SB 			0
+#define I2C_SR1_ADDR		1
+#define I2C_SR1_BTF			2
+#define I2C_SR1_ADD10		3
+#define I2C_SR1_STOPF		4
+#define I2C_SR1_RxNE		6
+#define I2C_SR1_TxE			7
+#define I2C_SR1_BERR		8
+#define I2C_SR1_ARLO		9
+#define I2C_SR1_AF			10
+#define I2C_SR1_OVR			11
+#define I2C_SR1_PECERR		12
+#define I2C_SR1_TIMEOUT		14
+#define I2C_SR1_SMBALERT	15
+
+
+/**
+ * I2C_SR1 flag definitions
+ */
+#define I2C_FLAG_SB 		(1 << I2C_SR1_SB)
+#define I2C_FLAG_ADDR		(1 << I2C_SR1_ADDR)
+#define I2C_FLAG_BTF		(1 << I2C_SR1_BTF)
+#define I2C_FLAG_ADD10		(1 << I2C_SR1_ADD10)
+#define I2C_FLAG_STOPF		(1 << I2C_SR1_STOPF)
+#define I2C_FLAG_RxNE		(1 << I2C_SR1_RxNE)
+#define I2C_FLAG_TxE		(1 << I2C_SR1_TxE)
+#define I2C_FLAG_BERR		(1 << I2C_SR1_BERR)
+#define I2C_FLAG_ARLO		(1 << I2C_SR1_ARLO)
+#define I2C_FLAG_AF			(1 << I2C_SR1_AF)
+#define I2C_FLAG_OVR		(1 << I2C_SR1_OVR)
+#define I2C_FLAG_PECERR		(1 << I2C_SR1_PECERR)
+#define I2C_FLAG_TIMEOUT	(1 << I2C_SR1_TIMEOUT)
+#define I2C_FLAG_SMBALERT	(1 << I2C_SR1_SMBALERT)
+
 /**
  * I2C peripheral clock setup
  */
