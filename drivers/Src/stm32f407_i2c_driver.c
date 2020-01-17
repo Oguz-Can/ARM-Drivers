@@ -7,6 +7,16 @@
 
 #include "stm32f407_i2c_driver.h"
 
+
+/**
+ * Helper functions
+ */
+static void I2C_GenerateStart(I2C_RegDef_t *pI2Cx);
+static void I2C_AddressPhase(I2C_RegDef_t *pI2Cx, uint8_t slaveAddr);
+static void I2C_ClearADDR(I2C_RegDef_t *pI2Cx);
+static void I2C_GenerateStop(I2C_RegDef_t *pI2Cx);
+
+
 /***************************************************************************
  * @fn					- I2C_PeriClockControl
  *
@@ -220,7 +230,7 @@ void I2C_DeInit(I2C_RegDef_t *pI2Cx) {
 
 
 /***************************************************************************
- * @fn					- I2C_GenerateStartCondition
+ * @fn					- I2C_GenerateStart
  *
  * @brief				- Helper function to initiate I2C communications
  *
@@ -230,7 +240,7 @@ void I2C_DeInit(I2C_RegDef_t *pI2Cx) {
  *
  * @Note				- none
  */
-static void I2C_GenerateStartCondition(I2C_RegDef_t *pI2Cx){
+static void I2C_GenerateStart(I2C_RegDef_t *pI2Cx){
 	pI2Cx->CR1 |= (1 << I2C_CR1_START);
 }
 
@@ -275,6 +285,21 @@ static void I2C_ClearADDR(I2C_RegDef_t *pI2Cx){
 }
 
 
+/***************************************************************************
+ * @fn					- I2C_GenerateStop
+ *
+ * @brief				- Helper function to produce stop condition
+ *
+ * @param[in]			- Register addresses of a given I2C
+ *
+ * @return				- none
+ *
+ * @Note				- none
+ */
+static void I2C_GenerateStop(I2C_RegDef_t *pI2Cx){
+	pI2Cx->CR1 |= (1 << I2C_CR1_STOP);
+}
+
 
 /***************************************************************************
  * @fn					- I2C_MasterSendData
@@ -292,7 +317,7 @@ static void I2C_ClearADDR(I2C_RegDef_t *pI2Cx){
  */
 void I2C_MasterSendData (I2C_Handle_t *pI2CHandle, uint8_t *pTxBuffer, uint32_t Len, uint8_t SlaveAddr){
 	//1. Generate start condition
-	I2C_GenerateStartCondition (pI2CHandle->pI2Cx);
+	I2C_GenerateStart (pI2CHandle->pI2Cx);
 
 	//2.Confirm that start generation is completed by checking the SB flag in the SR1
 	//Until SB is cleared SCL will be stretched
@@ -309,16 +334,24 @@ void I2C_MasterSendData (I2C_Handle_t *pI2CHandle, uint8_t *pTxBuffer, uint32_t 
 	I2C_ClearADDR(pI2CHandle->pI2Cx);
 
 	//6. Send data until Len is 0
-
+	while(Len < 0){ //Check if we have data to send
+		while(!I2C_GetFlagStatus(pI2CHandle->pI2Cx, I2C_FLAG_TxE)){ //Check if data register is empty
+			pI2CHandle->pI2Cx->DR = *pTxBuffer; //Write to data register
+			pTxBuffer++; //Increment data buffer
+			Len--; //Decrement length of the data to be sent
+		}
+	}
 
 	//7.When Len becomes 0 wait for TXE = 1 and BTF = 1 before generating stop condition
 	//TXE = 1 and BTF = 1 means SR and DR are empty and next transmission should begin when BTF = 1
 	//SCL will be stretched
-
+	while(!I2C_GetFlagStatus(pI2CHandle->pI2Cx, I2C_FLAG_TxE)){}; //Check if data register is empty
+	while(!I2C_GetFlagStatus(pI2CHandle->pI2Cx, I2C_FLAG_BTF)){}; //Check if last byte transmission is completed
+	
 	//8. Generate stop condition
 	//Master does not need to wait for completion of stop condition
 	//Generating stop automatically clears BTF
-	//
+	I2C_GenerateStop(pI2CHandle->pI2Cx);
 }
 
 /***************************************************************************
