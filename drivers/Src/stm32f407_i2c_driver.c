@@ -159,7 +159,8 @@ static uint32_t RCC_GetPCLK1() {
 /***************************************************************************
  * @fn					- I2C_Init
  *
- * @brief				- Configures I2C peripheral
+ * @brief				- Configures I2C peripheral register given the
+ * 						configuration
  *
  * @param[in]			- I2C structure that holds configuration and I2C address
  *
@@ -188,7 +189,7 @@ void I2C_Init(I2C_Handle_t *pI2CHandle) {
 	temp = 0;
 
 	//Calculate and set clock control
-	if (pI2CHandle->I2C_Config.I2C_SCLSpeed <= I2C_SCL_SPEED_SM){ //Standart mode (default)
+	if (pI2CHandle->I2C_Config.I2C_SCLSpeed <= I2C_SCL_SPEED_SM){ //Standard mode (default)
 		ccrValue = RCC_GetPCLK1() / (2 * pI2CHandle->I2C_Config.I2C_SCLSpeed);
 		temp |= (ccrValue & 0xFFF); //Mask bits so we don't overwrite
 	} else { //Fast mode
@@ -204,6 +205,17 @@ void I2C_Init(I2C_Handle_t *pI2CHandle) {
 	}
 	pI2CHandle->pI2Cx->CCR |= temp;
 	temp = 0;
+
+	//TRISE configuration
+	//Maximum rise time-=>These bits must be programmed with the maximum SCL rise time given in the I2C bus
+	//specification, incremented by 1 (see RM0090 reference manual)
+	if (pI2CHandle->I2C_Config.I2C_SCLSpeed <= I2C_SCL_SPEED_SM){ //Standard mode (default)
+		temp = (RCC_GetPCLK1() * 1000000U) + 1;
+	} else { //Fast mode
+		temp = ((RCC_GetPCLK1() * 300) / 1000000000U) + 1;
+	}
+
+	pI2CHandle->pI2Cx->TRISE |= (temp & 0x3F);
 }
 
 
