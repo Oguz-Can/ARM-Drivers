@@ -171,18 +171,17 @@ static uint32_t RCC_GetPCLK1() {
 void I2C_Init(I2C_Handle_t *pI2CHandle) {
 	uint32_t temp = 0;		//Temporarily holds register configurations
 	uint16_t ccrValue = 0;	//CRR field of I2C_CRR register
+	uint32_t PCLK1_value = RCC_GetPCLK1(); //Peripheral clock in Hz
 
-	//Set ack control bit
-	temp |= (pI2CHandle->I2C_Config.I2C_ACKControl << I2C_CR1_ACK);
-	pI2CHandle->pI2Cx->CR1 |= temp;
-	temp = 0;
+	//Enable the clock for I2Cx peripheral
+	I2C_PeriClockControl(pI2CHandle->pI2Cx, ENABLE);
 
 	//Set FREQ bits
-	temp = RCC_GetPCLK1() / 1000000U;
+	temp = PCLK1_value / 1000000U;
 	pI2CHandle->pI2Cx->CR2 |= (temp & 0x3F); //Mask bits so we don't overwrite
 	temp = 0;
 
-	//Set 7-bit slave address
+	//Set 7-bit slave address (In slave mode)
 	temp = pI2CHandle->I2C_Config.I2C_DeviceAddress << 1;
 	temp |= (1 << 14);	//For reasons unknown this bit of the OAR1 register supposed to be maintained by software as 1 (see RM0090 reference manual)
 	pI2CHandle->pI2Cx->OAR1 |= temp;
@@ -190,16 +189,16 @@ void I2C_Init(I2C_Handle_t *pI2CHandle) {
 
 	//Calculate and set clock control
 	if (pI2CHandle->I2C_Config.I2C_SCLSpeed <= I2C_SCL_SPEED_SM){ //Standard mode (default)
-		ccrValue = RCC_GetPCLK1() / (2 * pI2CHandle->I2C_Config.I2C_SCLSpeed);
+		ccrValue = PCLK1_value / (2 * pI2CHandle->I2C_Config.I2C_SCLSpeed);
 		temp |= (ccrValue & 0xFFF); //Mask bits so we don't overwrite
 	} else { //Fast mode
 		temp |= (1 << 15); //Set fast mode
 		temp |= (pI2CHandle->I2C_Config.I2C_FMDutyCycle << 14);
 
 		if (pI2CHandle->I2C_Config.I2C_FMDutyCycle == I2C_FM_DUTY_2) {
-			ccrValue = RCC_GetPCLK1() / (3 * pI2CHandle->I2C_Config.I2C_SCLSpeed);
+			ccrValue = PCLK1_value / (3 * pI2CHandle->I2C_Config.I2C_SCLSpeed);
 		} else {
-			ccrValue = RCC_GetPCLK1() / (25 * pI2CHandle->I2C_Config.I2C_SCLSpeed);
+			ccrValue = PCLK1_value / (25 * pI2CHandle->I2C_Config.I2C_SCLSpeed);
 		}
 		temp |= (ccrValue & 0xFFF);
 	}
@@ -210,11 +209,12 @@ void I2C_Init(I2C_Handle_t *pI2CHandle) {
 	//Maximum rise time-=>These bits must be programmed with the maximum SCL rise time given in the I2C bus
 	//specification, incremented by 1 (see RM0090 reference manual)
 	if (pI2CHandle->I2C_Config.I2C_SCLSpeed <= I2C_SCL_SPEED_SM){ //Standard mode (default)
-		temp = (RCC_GetPCLK1() * 1000000U) + 1;
+		temp = (PCLK1_value / 1000000U) + 1;
 	} else { //Fast mode
-		temp = ((RCC_GetPCLK1() * 300) / 1000000000U) + 1;
+		temp = ((PCLK1_value * 300) / 1000000000U) + 1;
 	}
 
+	pI2CHandle->pI2Cx->TRISE = 0; //Reset value of TRISE is not 0 (0x0002)
 	pI2CHandle->pI2Cx->TRISE |= (temp & 0x3F);
 }
 
@@ -333,21 +333,21 @@ void I2C_MasterSendData (I2C_Handle_t *pI2CHandle, uint8_t *pTxBuffer, uint32_t 
 
 	//2.Confirm that start generation is completed by checking the SB flag in the SR1
 	//Until SB is cleared SCL will be stretched
-	while(I2C_GetFlagStatus(pI2CHandle->pI2Cx, I2C_FLAG_SB)){};
+	while(!I2C_GetFlagStatus(pI2CHandle->pI2Cx, I2C_FLAG_SB)){};
 
 	//3. Send the address of the slave with r/nw bit set to w(0) (total 8 bits)
 	I2C_AddressPhase(pI2CHandle->pI2Cx, SlaveAddr);
 
 	//4. Confirm that address phase is completed by checking the ADDR flag in the SR1
-	while(I2C_GetFlagStatus(pI2CHandle->pI2Cx, I2C_FLAG_ADDR)){};
+	while(!I2C_GetFlagStatus(pI2CHandle->pI2Cx, I2C_FLAG_ADDR)){};
 
 	//5. Clear the ADDR flag according to its software sequence
 	//Until ADDR is cleared SCL will be stretched
 	I2C_ClearADDR(pI2CHandle->pI2Cx);
 
 	//6. Send data until Len is 0
-	while(Len < 0){ //Check if we have data to send
-		while(!I2C_GetFlagStatus(pI2CHandle->pI2Cx, I2C_FLAG_TxE)){ //Check if data register is empty
+	while(Len > 0){ //Check if we have data to send
+		while(I2C_GetFlagStatus(pI2CHandle->pI2Cx, I2C_FLAG_TxE)){ //Check if transmission data register is empty
 			pI2CHandle->pI2Cx->DR = *pTxBuffer; //Write to data register
 			pTxBuffer++; //Increment data buffer
 			Len--; //Decrement length of the data to be sent
@@ -381,6 +381,7 @@ void I2C_MasterSendData (I2C_Handle_t *pI2CHandle, uint8_t *pTxBuffer, uint32_t 
 void I2C_PeripheralControl (I2C_RegDef_t *pI2Cx, uint8_t EnOrDi){
 	if (EnOrDi == ENABLE) {
 		pI2Cx->CR1 |= (1 << I2C_CR1_PE);
+		pI2Cx->CR1 |= (1 << I2C_CR1_ACK); //Enable ack, this can not be set before PE = 1
 	} else {
 		pI2Cx->CR1 &= ~(1 << I2C_CR1_PE);
 	}
