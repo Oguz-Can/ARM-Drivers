@@ -80,6 +80,13 @@ typedef struct{
 #define I2C_FLAG_TIMEOUT	(1 << I2C_SR1_TIMEOUT)
 #define I2C_FLAG_SMBALERT	(1 << I2C_SR1_SMBALERT)
 
+
+/**
+ * I2C repeated start macros
+ */
+#define I2C_ENABLE_SR	SET
+#define I2C_DISABLE_SR	RESET
+
 /**
  * I2C peripheral clock setup
  */
@@ -111,8 +118,8 @@ void I2C_PeripheralControl (I2C_RegDef_t *pI2Cx, uint8_t EnOrDi);
 /**
  * Data send and receive
  */
-void I2C_MasterSendData (I2C_Handle_t *pI2CHandle, uint8_t *pTxBuffer, uint32_t Len, uint8_t SlaveAddr);
-void I2C_MasterReceiveData (I2C_Handle_t *pI2CHandle, uint8_t *pRxBuffer, uint32_t Len, uint8_t SlaveAddr);
+void I2C_MasterSendData (I2C_Handle_t *pI2CHandle, uint8_t *pTxBuffer, uint32_t Len, uint8_t SlaveAddr, bool Sr);
+void I2C_MasterReceiveData (I2C_Handle_t *pI2CHandle, uint8_t *pRxBuffer, uint32_t Len, uint8_t SlaveAddr, bool Sr);
 
 /**
  * Interrupt based data send and receive
