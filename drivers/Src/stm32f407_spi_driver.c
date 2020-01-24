@@ -164,7 +164,7 @@ void SPI_PeripheralControl (SPI_RegDef_t *pSPIx, uint8_t EnOrDi){
  *
  * @Note				- none
  */
-uint8_t SPI_GetFlagStatus(SPI_RegDef_t *pSPIx, uint32_t FlagName){
+bool SPI_GetFlagStatus(SPI_RegDef_t *pSPIx, uint32_t FlagName){
 	if (pSPIx->SR & FlagName) {
 		return FLAG_SET;
 	}

@@ -132,7 +132,7 @@ void SPI_PeriClockControl(SPI_RegDef_t * pSPIx, uint8_t EnOrDi);
 /**
  * SPI flag function
  */
-uint8_t SPI_GetFlagStatus(SPI_RegDef_t *pSPIx, uint32_t FlagName);
+bool SPI_GetFlagStatus(SPI_RegDef_t *pSPIx, uint32_t FlagName);
 
 /**
  * SPI Internal slave select control

@@ -8,6 +8,8 @@
 #define INC_STM32F407XX_H_
 
 #include <stdint.h>
+#include <stdio.h>
+#include <stdbool.h>
 #include "stddef.h"
 
 /***************************************************PROCCESSOR SPECIFIC MACROS***********************************************************/
