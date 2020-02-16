@@ -115,7 +115,12 @@
 #define IRQ_NO_SPI1			35
 #define IRQ_NO_SPI2			36
 #define IRQ_NO_SPI3			51
-
+#define IRQ_NO_I2C1_EV		31
+#define IRQ_NO_I2C1_ER		32
+#define IRQ_NO_I2C2_EV		33
+#define IRQ_NO_I2C2_ER		34
+#define IRQ_NO_I2C3_EV		79
+#define IRQ_NO_I2C4_ER		80
 
 /**
  * NVIC priority macros
@@ -496,7 +501,7 @@ typedef struct{
 #define I2C_CR2_FREQ		0
 #define I2C_CR2_ITERREN		8
 #define I2C_CR2_ITEVTEN		9
-#define I2C_CR2_UTBUFEN		10
+#define I2C_CR2_ITBUFEN		10
 #define I2C_CR2_DMAEN		11
 #define I2C_CR2_LAST		12
 
