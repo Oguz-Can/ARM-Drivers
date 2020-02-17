@@ -531,7 +531,40 @@ void I2C_MasterReceiveData (I2C_Handle_t *pI2CHandle, uint8_t *pRxBuffer, uint32
 
 
 /***************************************************************************
- * @fn					- I2C_SendDataIT
+ * @fn					- I2C_SlaveSendData
+ *
+ * @brief				- Sends data over a given I2C peripheral one byte at a time
+ *
+ * @param[in]			- I2C structure for register addresses
+ * @param[in]			- Data byte to be sent
+ *
+ * @return				- none
+ *
+ * @Note				- none
+ */
+void I2C_SlaveSendData (I2C_RegDef_t *pI2Cx, uint8_t data){
+	pI2Cx->DR = data;
+}
+
+
+/***************************************************************************
+ * @fn					- I2C_SlaveSendData
+ *
+ * @brief				- Sends data over a given I2C peripheral one byte at a time
+ *
+ * @param[in]			- I2C structure for register addresses
+ *
+ * @return				- Received data
+ *
+ * @Note				- none
+ */
+uint8_t I2C_SlaveReceiveData (I2C_RegDef_t *pI2Cx){
+	return (uint8_t) pI2Cx->DR;
+}
+
+
+/***************************************************************************
+ * @fn					- I2C_MasterSendDataIT
  *
  * @brief				- Saves buffer address and length information and
  * 						  enables I2C interrupt
@@ -545,7 +578,7 @@ void I2C_MasterReceiveData (I2C_Handle_t *pI2CHandle, uint8_t *pRxBuffer, uint32
  *
  * @Note				- This function will block until Len is 0
  */
-uint8_t I2C_SendDataIT (I2C_Handle_t *pI2CHandle, uint8_t *pTxBuffer, uint32_t Len, uint8_t SlaveAddr, bool Sr){
+uint8_t I2C_MasterSendDataIT (I2C_Handle_t *pI2CHandle, uint8_t *pTxBuffer, uint32_t Len, uint8_t SlaveAddr, bool Sr){
 	uint8_t	busystate = pI2CHandle->TxRxState;
 
 	if ((busystate != I2C_BUSY_IN_TX) && (busystate != I2C_BUSY_IN_RX)) {
@@ -573,7 +606,7 @@ uint8_t I2C_SendDataIT (I2C_Handle_t *pI2CHandle, uint8_t *pTxBuffer, uint32_t L
 
 
 /***************************************************************************
- * @fn					- I2C_ReceiveDataIT
+ * @fn					- I2C_MasterReceiveDataIT
  *
  * @brief				- Saves buffer address and length information and
  * 						  enables I2C interrupt
@@ -587,7 +620,7 @@ uint8_t I2C_SendDataIT (I2C_Handle_t *pI2CHandle, uint8_t *pTxBuffer, uint32_t L
  *
  * @Note				- This function will block until Len is 0
  */
-uint8_t I2C_ReceiveDataIT (I2C_Handle_t *pI2CHandle, uint8_t *pRxBuffer, uint32_t Len, uint8_t SlaveAddr, bool Sr){
+uint8_t I2C_MasterReceiveDataIT (I2C_Handle_t *pI2CHandle, uint8_t *pRxBuffer, uint32_t Len, uint8_t SlaveAddr, bool Sr){
 	uint8_t	busystate = pI2CHandle->TxRxState;
 
 	if ((busystate != I2C_BUSY_IN_TX) && (busystate != I2C_BUSY_IN_RX)) {
@@ -829,8 +862,7 @@ void I2C_EV_IRQHandling(I2C_Handle_t *pI2CHandle) {
 				I2C_MasterHandleTxEInterrupt(pI2CHandle);
 			}
 		} else { //Slave mode
-			//Confirm slave is in transmitter mode
-			if (pI2CHandle->pI2Cx->SR2 & (1 << I2C_SR2_TRA)) {
+			if (pI2CHandle->pI2Cx->SR2 & (1 << I2C_SR2_TRA)) { //Confirm slave is in transmitter mode
 				I2C_ApplicationEventCallback(pI2CHandle, I2C_EV_DATA_REQ);
 			}
 		}
@@ -846,7 +878,7 @@ void I2C_EV_IRQHandling(I2C_Handle_t *pI2CHandle) {
 				I2C_MasterHandleRxNEInterrupt(pI2CHandle);
 			}
 		} else { //Slave mode RxNE flag is set
-			if (!(pI2CHandle->pI2Cx->SR2 & (1 << I2C_SR2_TRA))) { //In reception?
+			if (!(pI2CHandle->pI2Cx->SR2 & (1 << I2C_SR2_TRA))) { //Confirm slave is in receiver mode
 				I2C_ApplicationEventCallback(pI2CHandle, I2C_EV_DATA_RCV); //Notify application
 			}
 		}
@@ -910,6 +942,30 @@ void I2C_ER_IRQHandling(I2C_Handle_t *pI2CHandle) {
 	if (temp1 && temp2) {
 		pI2CHandle->pI2Cx->SR1 &= ~(1 << I2C_SR1_TIMEOUT);
 		I2C_ApplicationEventCallback(pI2CHandle, I2C_ERROR_TIMEOUT);
+	}
+}
+
+
+/***************************************************************************
+ * @fn					- I2C_SlaveCallbackEventControl
+ *
+ * @brief				- Control slave interrupt flags
+ *
+ * @param[in]			- I2C structure for register addresses
+ *
+ * @return				- none
+ *
+ * @Note				- none
+ */
+void I2C_SlaveCallbackEventControl(I2C_RegDef_t *pI2Cx, uint8_t EnOrDi){
+	if (EnOrDi == ENABLE){
+		pI2Cx->CR2 |= (1 << I2C_CR2_ITEVTEN);
+		pI2Cx->CR2 |= (1 << I2C_CR2_ITBUFEN);
+		pI2Cx->CR2 |= (1 << I2C_CR2_ITERREN);
+	} else {
+		pI2Cx->CR2 &= ~(1 << I2C_CR2_ITEVTEN);
+		pI2Cx->CR2 &= ~(1 << I2C_CR2_ITBUFEN);
+		pI2Cx->CR2 &= ~(1 << I2C_CR2_ITERREN);
 	}
 }
 

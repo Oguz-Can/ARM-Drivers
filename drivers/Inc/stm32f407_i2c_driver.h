@@ -144,11 +144,14 @@ void I2C_GenerateStop(I2C_RegDef_t *pI2Cx);
 void I2C_MasterSendData (I2C_Handle_t *pI2CHandle, uint8_t *pTxBuffer, uint32_t Len, uint8_t SlaveAddr, bool Sr);
 void I2C_MasterReceiveData (I2C_Handle_t *pI2CHandle, uint8_t *pRxBuffer, uint32_t Len, uint8_t SlaveAddr, bool Sr);
 
+void I2C_SlaveSendData (I2C_RegDef_t *pI2Cx, uint8_t data);
+uint8_t I2C_SlaveReceiveData (I2C_RegDef_t *pI2Cx);
+
 /**
  * Interrupt based data send and receive
  */
-uint8_t I2C_SendDataIT (I2C_Handle_t *pI2CHandle, uint8_t *pTxBuffer, uint32_t Len, uint8_t SlaveAddr, bool Sr);
-uint8_t I2C_ReceiveDataIT (I2C_Handle_t *pI2CHandle, uint8_t *pRxBuffer, uint32_t Len, uint8_t SlaveAddr, bool Sr);
+uint8_t I2C_MasterSendDataIT (I2C_Handle_t *pI2CHandle, uint8_t *pTxBuffer, uint32_t Len, uint8_t SlaveAddr, bool Sr);
+uint8_t I2C_MasterReceiveDataIT (I2C_Handle_t *pI2CHandle, uint8_t *pRxBuffer, uint32_t Len, uint8_t SlaveAddr, bool Sr);
 
 /**
  * IRQ configuration and ISR handling
@@ -158,6 +161,8 @@ void I2C_IRQPriorityConfig (uint8_t IRQNumber, uint8_t IRQPriority);
 void I2C_ApplicationEventCallback (I2C_Handle_t *pI2CHandle, uint8_t AppEvent); //Should be implemented in application
 void I2C_EV_IRQHandling(I2C_Handle_t *pI2CHandle);
 void I2C_ER_IRQHandling(I2C_Handle_t *pI2CHandle);
+
+void I2C_SlaveCallbackEventControl(I2C_RegDef_t *pI2Cx, uint8_t EnOrDi);
 
 /**
  * Disable I2C interrupts
