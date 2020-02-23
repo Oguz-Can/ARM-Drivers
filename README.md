@@ -8,4 +8,4 @@ Currently there are drivers for:
 -I2C  
 -USART/UART  
 
-This project does not supersede other driver projects. gIt is created purely to extend author's understanding of ARM Cortex-M based MCU's
+This project does not supersede other driver projects. It is created purely to extend author's understanding of ARM Cortex-M based MCU's
