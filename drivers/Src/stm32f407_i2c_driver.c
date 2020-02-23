@@ -1027,3 +1027,19 @@ void I2C_CloseReceiveData(I2C_Handle_t *pI2CHandle) {
 	}
 }
 
+/*********************************************************************
+ * @fn      		  - I2C_ApplicationEventCallback
+ *
+ * @brief             - In interrupt mode reports the status of the
+ * 						peripheral to the application
+ *
+ * @param[in]         - I2C structure that holds configuration and I2C address
+ * @param[in]         - Status to be reported
+ *
+ * @return            - none
+ *
+ * @Note              - This function supposed to be implemented in application
+ */
+void __attribute__((weak)) I2C_ApplicationEventCallback (I2C_Handle_t *pI2CHandle, uint8_t AppEvent){
+
+}
