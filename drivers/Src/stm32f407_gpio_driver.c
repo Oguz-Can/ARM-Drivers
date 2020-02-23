@@ -347,9 +347,6 @@ void GPIO_ToggleOutputPin	(GPIO_RegDef_t *pGPIOx, uint8_t PinNumber){
  *
  * @Note				- none
  */
-/**
- * IRQ configuration and ISR handling
- */
 void GPIO_IRQInterruptConfig		(uint8_t IRQNumber, uint8_t EnOrDi){
 	//TO DO: Create NVIC structure, tidy this
 	if (EnOrDi) {
